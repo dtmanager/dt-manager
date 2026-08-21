@@ -259,7 +259,18 @@ export function PantallaArmarEquipo({ onListo, onVolver }: { onListo: () => void
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="h-screen bg-neutral-950 text-neutral-200 font-sans flex flex-col overflow-hidden">
+      {/* Bug de mobile (pedido explícito: "que se vea bien en celular"):
+          `h-screen overflow-hidden` bloqueaba el scroll de TODA la
+          pantalla — en desktop no se nota porque las 3 columnas
+          (`lg:flex-row`) entran juntas en una pantalla, pero apiladas en
+          mobile (`flex-col` sin el `lg:`) la cancha, "Confirmar equipo" y
+          Fuerza/Mentalidad quedaban por fuera del viewport y eran
+          IMPOSIBLES de alcanzar (nada scrolleaba salvo la lista de
+          jugadores, que tiene su propio `overflow-y-auto`). `min-h-screen`
+          deja que la página scrollee en mobile; `lg:h-screen
+          lg:overflow-hidden` conserva el comportamiento de desktop tal
+          cual estaba (todo entra en una pantalla, sin scroll de página). */}
+      <div className="min-h-screen lg:h-screen bg-neutral-950 text-neutral-200 font-sans flex flex-col lg:overflow-hidden">
         <header className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 shrink-0 topbar-entrada">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-orange-500 to-orange-800 flex items-center justify-center font-black text-xs shadow-lg shadow-orange-500/20">
@@ -292,7 +303,7 @@ export function PantallaArmarEquipo({ onListo, onVolver }: { onListo: () => void
                 </button>
               ))}
             </div>
-            <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+            <div className="max-h-64 lg:max-h-none lg:flex-1 overflow-y-auto min-h-0 pr-1">
               <ListaDroppable>
                 {lista.map((j) => (
                   <TarjetaJugadorCompacta key={j.id} jugador={j} enUso={idsEnCancha.has(j.id)} />
@@ -302,7 +313,7 @@ export function PantallaArmarEquipo({ onListo, onVolver }: { onListo: () => void
           </div>
 
           <div className="flex-1 flex flex-col gap-3 min-h-0">
-            <div className="relative flex-1 min-h-0 rounded-xl bg-gradient-to-b from-green-800 to-green-900 border-2 border-green-700 overflow-hidden">
+            <div className="relative min-h-[380px] lg:min-h-0 flex-1 rounded-xl bg-gradient-to-b from-green-800 to-green-900 border-2 border-green-700 overflow-hidden">
               <select
                 value={formacion}
                 onChange={(e) => cambiarFormacion(e.target.value as NombreFormacion)}
