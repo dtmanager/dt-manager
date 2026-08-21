@@ -5,7 +5,9 @@
 // TODO el resto del plantel que no quedó de titular (sin cupo fijo).
 
 import { useEffect, useMemo, useState } from 'react';
-import { DndContext, type DragEndEvent, useDroppable } from '@dnd-kit/core';
+import {
+  DndContext, type DragEndEvent, useDroppable, useSensor, useSensors, MouseSensor, TouchSensor, KeyboardSensor,
+} from '@dnd-kit/core';
 import { FORMACIONES, NOMBRES_FORMACION, type NombreFormacion } from '../data/formaciones';
 import { TarjetaJugadorCompacta } from './TarjetaJugadorCompacta';
 import type { Jugador, Posicion } from '../types';
@@ -77,6 +79,22 @@ export function PantallaArmarEquipo({ onListo, onVolver }: { onListo: () => void
     clubUsuarioId, clubes, actualizarAlineacion, cambiarMentalidad,
   } = useGameStore();
   const club = clubUsuarioId ? clubes[clubUsuarioId] : null;
+
+  // Bug reportado ("sigo sin poder arrastrar los jugadores del celu"): sin
+  // `sensors` explícito, DndContext usa PointerSensor por default, que
+  // activa el drag apenas hay movimiento — en touch eso compite con el
+  // scroll nativo de la página (que además ahora scrollea de verdad en
+  // mobile, ver el fix anterior de esta misma pantalla) y el navegador se
+  // queda con el gesto como scroll antes de que dnd-kit llegue a agarrarlo.
+  // MouseSensor (igual que antes, sin delay — el mouse no compite con
+  // ningún scroll táctil) + TouchSensor con un `delay` corto: mantener
+  // apretado unos ms antes de que el navegador decida "esto es un drag" y
+  // recién ahí, si no hubo delay, sigue siendo scroll normal.
+  const sensors = useSensors(
+    useSensor(MouseSensor),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const [formacion, setFormacion] = useState<NombreFormacion>((club?.formacion as NombreFormacion) ?? '4-4-2');
   const [titulares, setTitulares] = useState<Record<string, string | null>>(() => {
@@ -258,7 +276,7 @@ export function PantallaArmarEquipo({ onListo, onVolver }: { onListo: () => void
   }
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       {/* Bug de mobile (pedido explícito: "que se vea bien en celular"):
           `h-screen overflow-hidden` bloqueaba el scroll de TODA la
           pantalla — en desktop no se nota porque las 3 columnas
